@@ -5,106 +5,209 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <queue>
+#include <thread>
+#include <condition_variable>
+#include <atomic>
 #include <vector>
 #include <ctime>
 #include <chrono>
 #include <iomanip>
+#include <functional>
+#include <string>
+#include <utility>
+#include <memory>
+#include <filesystem>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <cstdarg>
+#include "queue.hpp"
 namespace base
 {
+    enum class LogLevel
+    {
+        DEBUG,
+        INFO,
+        WARN,
+        ERROR,
+        FATAL,
+        COUNT
+    };
+
+    enum class LogMode
+    {
+        SYNC,
+        ASYNC
+    };
+
+    class LogSink
+    {
+    public:
+        virtual ~LogSink() = default;
+        virtual void log(const std::string &msg, LogLevel level) = 0;
+        virtual void flush() = 0;
+    };
+
+    class ConsoleSink : public LogSink
+    {
+    public:
+        ConsoleSink() = default;
+        void log(const std::string &msg, LogLevel level) override;
+        void flush() override;
+    };
+
+    class FileSink : public LogSink
+    {
+    public:
+        FileSink(const std::string &filename, size_t max_size = 10 * 1024 * 1024, int max_files = 5);
+        ~FileSink() override;
+        void log(const std::string &msg, LogLevel level) override;
+        void flush() override;
+
+    private:
+        void open_file();
+        void rotate_file();
+
+    private:
+        std::string filename_;
+        size_t max_size_;
+        int max_files_;
+        int file_handle_;
+        std::atomic<size_t> current_size_;
+        mutable std::mutex file_mutex_;
+    };
+
+    class LogMessage
+    {
+    public:
+        LogMessage() = default;
+        LogMessage(const std::string &msg, LogLevel level);
+        LogMessage(const LogMessage &other) = delete;
+        LogMessage(LogMessage &&other) noexcept;
+        LogMessage &operator=(LogMessage &&other) noexcept;
+
+        const std::string &get_raw_message() const;
+        LogLevel get_level() const;
+        auto get_timestamp() const;
+        const std::string &get_formatted_message() const;
+
+    private:
+        std::string raw_message_;
+        LogLevel level_;
+        std::chrono::system_clock::time_point timestamp_;
+        std::string formatted_message_;
+
+        // 时间缓存相关
+        static thread_local std::tm cached_tm_;
+        static thread_local std::time_t last_time_t_;
+        static std::mutex time_format_mutex_;
+        static const char *LOG_LEVEL_STRINGS[];
+    };
 
     class Logger
     {
     public:
-        enum LogLevel
-        {
-            LOG_LEVEL_DEBUG,
-            LOG_LEVEL_INFO,
-            LOG_LEVEL_WARN,
-            LOG_LEVEL_ERROR,
-            LOG_LEVEL_FATAL,
-            LOG_LEVEL_COUNT
-        };
+        explicit Logger(LogMode mode = LogMode::SYNC);
+        virtual ~Logger() = default;
 
-        Logger();
-        explicit Logger(const std::string &filename);
-        ~Logger();
-
-        Logger(const Logger &) = delete;
-        Logger &operator=(const Logger &) = delete;
-        Logger(Logger &&) = delete;
-        Logger &operator=(Logger &&) = delete;
-
-        void set_log_file(const std::string &filename);
-        void set_log_level(LogLevel level);
-        void set_output_console(bool enable);
-        void set_output_file(bool enable);
-
-        void set_file_roll_policy(size_t max_size, int backup_count);
-
-        void log(const std::string &message, LogLevel level);
-
-        template <typename... Args>
-        void debug(Args &&...args)
-        {
-            log(format_message(std::forward<Args>(args)...), LOG_LEVEL_DEBUG);
-        }
-        template <typename... Args>
-        void info(Args &&...args)
-        {
-            log(format_message(std::forward<Args>(args)...), LOG_LEVEL_INFO);
-        }
-
-        template <typename... Args>
-        void warning(Args &&...args)
-        {
-            log(format_message(std::forward<Args>(args)...), LOG_LEVEL_WARN);
-        }
-
-        template <typename... Args>
-        void error(Args &&...args)
-        {
-            log(format_message(std::forward<Args>(args)...), LOG_LEVEL_ERROR);
-        }
-
-        template <typename... Args>
-        void fatal(Args &&...args)
-        {
-            log(format_message(std::forward<Args>(args)...), LOG_LEVEL_FATAL);
-        }
-
-    private:
-        template <typename T>
-        void format_message_helper(std::ostringstream &oss, T &&args)
-        {
-            oss << std::forward<T>(args);
-        }
-
-        template <typename T, typename... Args>
-        void format_message_helper(std::ostringstream &oss, T &&arg, Args &&...args)
-        {
-            oss << std::forward<T>(arg) << " ";
-            format_message_helper(oss, std::forward<Args>(args)...);
-        }
-
-        template <typename... Args>
-        std::string format_message(Args &&...args)
-        {
-            std::ostringstream oss;
-            format_message_helper(oss, std::forward<Args>(args)...);
-            return oss.str();
-        }
-        void check_and_roll_file();
-
-    private:
-        LogLevel log_level_;            // 当前日志级别
-        std::string log_file_path_;     // 日志文件路径
-        std::ofstream log_file_stream_; // 日志文件流
-        bool output_to_console_;        // 是否输出到控制台
-        bool output_to_file_;           // 是否输出到文件
-        size_t file_max_size_;          // 单个日志文件最大大小
-        int file_backup_count_;         // 日志文件备份数量
-        std::mutex log_mutex_;          // 日志互斥锁，保证线程安全
-
-        static const char *LOG_LEVEL_STRINGS[];
+        virtual void log(LogLevel level, const std::string &msg) = 0;
+        virtual void flush() = 0;
+        virtual void add_sink(std::shared_ptr<LogSink> sink) = 0;
+        virtual void set_log_level(LogLevel level) = 0;
     };
+
+    class SyncLogger : public Logger
+    {
+    public:
+        explicit SyncLogger();
+        void log(LogLevel level, const std::string &msg) override;
+        void flush() override;
+        void add_sink(std::shared_ptr<LogSink> sink) override;
+        void set_log_level(LogLevel level) override;
+
+    private:
+        std::vector<std::shared_ptr<LogSink>> sinks_;
+        LogLevel log_level_;
+    };
+
+    class AsyncLogger : public Logger
+    {
+    private:
+        using LogQueue = LockFreeQueue<LogMessage>;
+
+    public:
+        explicit AsyncLogger();
+        ~AsyncLogger() override;
+        void log(LogLevel level, const std::string &msg) override;
+        void flush() override;
+        void add_sink(std::shared_ptr<LogSink> sink) override;
+        void set_log_level(LogLevel level) override;
+
+    private:
+        void worker_thread();
+
+    private:
+        LogQueue log_queue_;
+        std::vector<std::shared_ptr<LogSink>> sinks_;
+        std::mutex sinks_mutex_;
+        LogLevel log_level_;
+        std::atomic<bool> stop_flag_;
+        std::thread worker_thread_;
+    };
+
+    class LoggerManager
+    {
+    public:
+        static LoggerManager &instance();
+
+        void set_logger(std::unique_ptr<Logger> logger);
+        Logger *get_logger();
+
+        void set_log_level(LogLevel level);
+        void add_sink(std::shared_ptr<LogSink> sink);
+        void reset();
+
+    private:
+        LoggerManager() = default;
+        ~LoggerManager() = default;
+        LoggerManager(const LoggerManager &) = delete;
+        LoggerManager &operator=(const LoggerManager &) = delete;
+
+    private:
+        std::unique_ptr<Logger> logger_;
+        std::mutex mutex_;
+    };
+
+    inline std::string safe_printf_format(const char *fmt, ...)
+    {
+        va_list args;
+        va_list args_copy;
+        va_start(args, fmt);
+        va_copy(args_copy, args);
+
+        // 获取所需缓冲区大小
+        int size = vsnprintf(nullptr, 0, fmt, args) + 1;
+        va_end(args);
+
+        if (size <= 1)
+            return std::string(fmt);
+
+        // 分配缓冲区并格式化
+        std::unique_ptr<char[]> buffer(new char[size]);
+        int written = vsnprintf(buffer.get(), size, fmt, args_copy);
+        va_end(args_copy);
+
+        if (written < 0)
+            return std::string(fmt);
+
+        return std::string(buffer.get(), written);
+    }
 } // namespace base
+
+#define LOG_DEBUG(fmt, ...) base::LoggerManager::instance().get_logger()->log(base::LogLevel::DEBUG, base::safe_printf_format(fmt, ##__VA_ARGS__))
+#define LOG_INFO(fmt, ...) base::LoggerManager::instance().get_logger()->log(base::LogLevel::INFO, base::safe_printf_format(fmt, ##__VA_ARGS__))
+#define LOG_WARN(fmt, ...) base::LoggerManager::instance().get_logger()->log(base::LogLevel::WARN, base::safe_printf_format(fmt, ##__VA_ARGS__))
+#define LOG_ERROR(fmt, ...) base::LoggerManager::instance().get_logger()->log(base::LogLevel::ERROR, base::safe_printf_format(fmt, ##__VA_ARGS__))
+#define LOG_FATAL(fmt, ...) base::LoggerManager::instance().get_logger()->log(base::LogLevel::FATAL, base::safe_printf_format(fmt, ##__VA_ARGS__))
