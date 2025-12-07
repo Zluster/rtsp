@@ -131,8 +131,6 @@ namespace net
         channel_->disableAll();
         channel_->remove();
         int sockfd = channel_->fd();
-        // Can't reset channel_ here, because we are inside Channel::handleEvent
-        loop_->queueInLoop(std::bind(&Connector::resetChannel, shared_from_this()));
         return sockfd;
     }
 
@@ -158,11 +156,13 @@ namespace net
         {
             LOG_WARN("Connector::handleWrite - SO_ERROR = %d", err);
             retry(sockfd);
+            loop_->queueInLoop(std::bind(&Connector::resetChannel, this));
         }
         else if (0)
         {
             LOG_WARN("Connector::handleWrite - Self connect");
             retry(sockfd);
+            loop_->queueInLoop(std::bind(&Connector::resetChannel, this));
         }
         else
         {
@@ -175,6 +175,7 @@ namespace net
             {
                 ::close(sockfd);
             }
+            loop_->queueInLoop(std::bind(&Connector::resetChannel, this));
         }
     }
 

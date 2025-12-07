@@ -79,8 +79,12 @@ namespace net
 
     void TcpClient::newConnection(int sockfd)
     {
+
         loop_->assertInLoopThread();
         InetAddress peerAddr(Socket::getPeerAddr(sockfd));
+
+        LOG_INFO("TcpClient::newConnection [%s] - [%d] from %s", name_.c_str(),
+                 sockfd, peerAddr.toIpPort().c_str());
         char buf[32];
         snprintf(buf, sizeof buf, ":%s#%d", peerAddr.toIpPort().c_str(), nextConnId_);
         ++nextConnId_;

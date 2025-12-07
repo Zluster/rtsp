@@ -31,7 +31,8 @@ namespace net
 
         if (numEvents > 0)
         {
-            LOG_DEBUG("epoll_wait return %d events", numEvents);
+            LOG_DEBUG("epoll_wait return %d events in thread %d", numEvents, gettid());
+
             fillActiveChannels(numEvents, activeChannels);
             if (static_cast<size_t>(numEvents) == events_.size())
             {
@@ -40,13 +41,13 @@ namespace net
         }
         else if (numEvents == 0)
         {
-            LOG_DEBUG("epoll_wait timeout");
+            LOG_DEBUG("epoll_wait timeout in thread %d with %d channels", gettid(), channels_.size());
         }
         else
         {
             if (errno != EINTR)
             {
-                LOG_ERROR("EpollPoller::poll() error: %s", strerror(errno));
+                LOG_ERROR("EpollPoller::poll() error: %s in thread %d", strerror(errno), gettid());
             }
         }
 
@@ -135,6 +136,7 @@ namespace net
 
     bool EpollPoller::hasChannel(Channel *channel) const
     {
-        return channels_.find(channel->fd()) != channels_.end();
+        auto it = channels_.find(channel->fd());
+        return it != channels_.end() && it->second == channel;
     }
 }

@@ -31,7 +31,7 @@ void onMessage(const TcpConnectionPtr &conn, Buffer *buf, base::Timestamp time)
     LOG_INFO("Received %zd bytes from %s: %s, at %s",
              msg.size(),
              conn->getPeerAddr().toIpPort().c_str(),
-             msg.c_str(), time.toString());
+             msg.c_str(), time.toString().c_str());
 
     // 回显消息
     conn->send(msg);
@@ -47,6 +47,7 @@ int main(int argc, char *argv[])
     auto logger = std::make_unique<base::SyncLogger>();
     logger->add_sink(std::make_shared<base::FileSink>(log_file));
     logger->add_sink(std::make_shared<base::ConsoleSink>());
+    logger->set_log_level(base::LogLevel::DEBUG);
     base::LoggerManager::instance().set_logger(std::move(logger));
 
     LOG_INFO("Server starting...");

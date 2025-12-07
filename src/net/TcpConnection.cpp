@@ -35,7 +35,7 @@ namespace net
         LOG_DEBUG("TcpConnection::dtor[%s] at %p fd=%d state=%d",
                   name_.c_str(), this, sockfd_, static_cast<int>(state_.load()));
         assert(state_ == kDisconnected);
-        loop_->removeChannel(channel_.get());
+        //        loop_->removeChannel(channel_.get());
         close(sockfd_);
     }
 
@@ -190,6 +190,7 @@ namespace net
         loop_->assertInLoopThread();
         setState(kConnected);
         channel_->enableReading();
+        connectionCallback_(shared_from_this());
     }
 
     void TcpConnection::connectDestroyed()

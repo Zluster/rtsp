@@ -11,7 +11,12 @@ include_directories(${GTEST_INCLUDE_DIRS})
 find_library(GTEST_LIBRARY NAMES libgtest.a gtest)
 find_library(GTEST_MAIN_LIBRARY NAMES libgtest_main.a gtest_main)
 # !!! 关键修改：使用 CMAKE_SOURCE_DIR 指向项目根目录 !!!
-include_directories(${CMAKE_SOURCE_DIR}/src)
+include_directories(${CMAKE_SOURCE_DIR}/src
+  ${CMAKE_SOURCE_DIR}/src/base
+  ${CMAKE_SOURCE_DIR}/src/rtsp
+  ${CMAKE_SOURCE_DIR}/src/rtp
+  ${CMAKE_SOURCE_DIR}/src/net
+  ${CMAKE_SOURCE_DIR}/src/media)
 
 # 测试源文件
 file(GLOB TEST_SOURCES "*.cpp")

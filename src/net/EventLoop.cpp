@@ -2,6 +2,7 @@
 #include "EventLoop.hpp"
 #include "Poller.hpp"
 #include <cassert>
+#include <sys/eventfd.h>
 namespace net
 {
     namespace
@@ -16,9 +17,14 @@ namespace net
           pollReturnTime_(Timestamp::now()),
           poller_(Poller::newDefaultPoller(this)),
           timerQueue_(new base::TimerQueue()),
+          wakeupFd_(::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC)),
           wakeUpChannel_(new Channel(this, wakeupFd_)),
           callingPendingFunctors_(false)
     {
+        if (wakeupFd_ < 0)
+        {
+            LOG_FATAL("eventfd creation EventLoop::EventLoop");
+        }
         LOG_DEBUG("EventLoop created %p", this);
         wakeUpChannel_->setReadCallback(std::bind(&EventLoop::handleRead, this));
         wakeUpChannel_->enableReading();
@@ -40,7 +46,7 @@ namespace net
         assertInLoopThread();
         looping_ = true;
         quit_ = false;
-        LOG_INFO("EventLoop %p start looping", this);
+        LOG_INFO("EventLoop %p start looping in thread %d", this, gettid());
         while (!quit_)
         {
             activeChannels_.clear();

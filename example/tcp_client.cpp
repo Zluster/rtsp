@@ -34,6 +34,11 @@ public:
         if (conn_)
         {
             conn_->send(msg);
+            LOG_INFO("Send message: %s", msg.c_str()); // 新增日志
+        }
+        else
+        {
+            LOG_WARN("Connection not ready, cannot send message: %s", msg.c_str()); // 新增日志
         }
     }
 
@@ -78,6 +83,7 @@ int main(int argc, char *argv[])
     auto logger = std::make_unique<base::SyncLogger>();
     logger->add_sink(std::make_shared<base::FileSink>(log_file));
     logger->add_sink(std::make_shared<base::ConsoleSink>());
+    logger->set_log_level(base::LogLevel::DEBUG);
     base::LoggerManager::instance().set_logger(std::move(logger));
 
     LOG_INFO("Client starting...");
