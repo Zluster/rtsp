@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "base/logger.hpp"
-#include "base/queue.hpp"
+#include "base/Logger.hpp"
+#include "base/Queue.hpp"
 #include <fstream>
 #include <chrono>
 #include <thread>

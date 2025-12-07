@@ -1,4 +1,4 @@
-#include "logger.hpp"
+#include "Logger.hpp"
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
