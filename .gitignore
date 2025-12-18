@@ -1,2 +1,5 @@
+conanbuild*.sh
+conanrun*.sh
+deactivate_conan*.sh
 build
 .vscode/
