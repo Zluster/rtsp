@@ -125,7 +125,7 @@ namespace net
         assert(channel->isNoneEvent());
         int index = channel->index();
         assert(index == kAdded || index == kDeleted);
-        size_t n = channels_.erase(fd);
+        [[maybe_unused]] size_t n = channels_.erase(fd);
         assert(n == 1);
         if (index == kAdded)
         {

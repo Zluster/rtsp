@@ -1,6 +1,7 @@
 conanbuild*.sh
 conanrun*.sh
 deactivate_conan*.sh
-build
+build/
 .vscode/
-docs
+docs/doxygen/output/
+artifacts/
