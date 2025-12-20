@@ -67,7 +67,8 @@ TEST(EventLoopTest, Channel)
     std::thread t([&]()
                   {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        write(pipefd[1], "test", 4); });
+        [[maybe_unused]] ssize_t bytes_written = write(pipefd[1], "test", 4);
+        assert(bytes_written == 4); });
     loop.loop();
     t.join();
     close(pipefd[0]);

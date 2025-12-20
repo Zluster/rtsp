@@ -9,17 +9,17 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Werror")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 
-set(CMAKE_INSTALL_RPATH "/usr/lib/x86_64-linux-gnu")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/artifacts/binaries)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/artifacts/libraries)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/artifacts/libraries)
+
+set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
-
 add_subdirectory(src)
-add_subdirectory(example)
+add_subdirectory(examples)
 add_subdirectory(tests)
 
 
-# install(TARGETS ${PROJECT_NAME} DESTINATION bin)
-# install(DIRECTORY ${PROJECT_BINARY_DIR}/include/ DESTINATION include)
+install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY docs/guides/ DESTINATION share/doc/rtsp)
