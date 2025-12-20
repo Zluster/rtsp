@@ -1,0 +1,36 @@
+#!/bin/bash
+set -e
+
+echo "🚀 Starting API documentation generation..."
+
+# 1. 检查依赖
+if ! command -v doxygen &> /dev/null; then
+    echo "❌ Error: doxygen not found. Install with: sudo apt install doxygen graphviz"
+    exit 1
+fi
+
+# 2. 清理旧文档
+echo "🧹 Cleaning old docs..."
+rm -rf docs
+
+# 3. 生成新文档
+echo "📄 Generating documentation with Doxygen..."
+doxygen Doxyfile
+
+# 4. 验证输出
+if [ ! -f "docs/html/index.html" ]; then
+    echo "❌ Error: docs/html/index.html not generated!"
+    exit 1
+fi
+
+echo "✅ Documentation generated successfully!"
+echo "📁 Output: $(pwd)/docs/html/index.html"
+echo ""
+echo "🔗 Open in browser:"
+echo "   file://$(pwd)/docs/html/index.html"
+echo ""
+echo "🌐 Serve with Python for online access:"
+echo "   cd docs/html && python3 -m http.server 8000"
+echo ""
+echo "🐳 Or serve with Docker:"
+echo "   docker run -p 8000:80 -v $(pwd)/docs/html:/usr/local/apache2/htdocs/ httpd:2.4"
