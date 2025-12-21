@@ -1,6 +1,8 @@
 # 收集源文件
 file(GLOB_RECURSE SDK_SOURCES "*.cpp")
 
+# 排除Python绑定目录中的文件
+list(FILTER SDK_SOURCES EXCLUDE REGEX "python/")
 # 创建对象库
 add_library(rtsp_sdk_obj OBJECT ${SDK_SOURCES})
 

@@ -5,3 +5,4 @@ build/
 .vscode/
 docs/doxygen/output/
 artifacts/
+python/rtsp_sdk.egg-info

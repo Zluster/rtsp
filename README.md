@@ -14,9 +14,9 @@ rtsp/
 ├── artifacts/ # 构建产物 
 └── README.md # 项目说明文档
 编译步骤
-1. 生成Conan依赖配置
-conan install conan/conanfile.py -s build_type=Release --build=missing
-2. 生成cmake工程文件
 mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../toolchains/linux.toolchain.cmake 
+1. 生成Conan依赖配置
+conan install ../conan/conanfile.py --build=missing -s build_type=Release -of conan
+2. 生成cmake工程文件
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../toolchains/linux.toolchain.cmake -DBUILD_PYTHON_BINDINGS=ON
 make -j$(nproc)

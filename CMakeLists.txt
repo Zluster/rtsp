@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(RtspSdk VERSION 10.0.0 LANGUAGES CXX)
+project(RtspSdk VERSION 0.0.0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -16,10 +16,17 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/artifacts/libraries)
 set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
+include(${CMAKE_BINARY_DIR}/conan/conan_toolchain.cmake)
+include(${CMAKE_BINARY_DIR}/conan/conandeps_legacy.cmake)
+
 add_subdirectory(src)
 add_subdirectory(examples)
 add_subdirectory(tests)
 
+option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
+if(BUILD_PYTHON_BINDINGS)
+    add_subdirectory(src/python)
+endif()
 
 install(DIRECTORY include/ DESTINATION include)
 install(DIRECTORY docs/guides/ DESTINATION share/doc/rtsp)

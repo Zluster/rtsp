@@ -1,0 +1,11 @@
+README.md
+pyproject.toml
+setup.py
+rtsp/__init__.py
+rtsp/wrapper.py
+rtsp_sdk.egg-info/PKG-INFO
+rtsp_sdk.egg-info/SOURCES.txt
+rtsp_sdk.egg-info/dependency_links.txt
+rtsp_sdk.egg-info/not-zip-safe
+rtsp_sdk.egg-info/requires.txt
+rtsp_sdk.egg-info/top_level.txt
